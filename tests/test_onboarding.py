@@ -1,0 +1,703 @@
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+from faigate.onboarding import (
+    build_onboarding_report,
+    build_onboarding_validation,
+    collect_provider_env_requirements,
+    render_onboarding_report,
+    render_onboarding_report_markdown,
+    render_onboarding_validation,
+)
+
+
+def test_onboarding_report_marks_missing_api_keys_and_presets(tmp_path: Path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DEEPSEEK_API_KEY=\n", encoding="utf-8")
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - deepseek-chat
+providers:
+  deepseek-chat:
+    backend: openai-compat
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    tier: default
+client_profiles:
+  enabled: true
+  default: generic
+  presets: ["openclaw"]
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: true
+  repository: "fusionAIze/faigate"
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    report = build_onboarding_report(config_path=config_file, env_file=env_file)
+
+    assert report["providers"]["total"] == 1
+    assert report["providers"]["ready"] == 0
+    assert report["providers"]["missing_api_keys"] == ["deepseek-chat"]
+    assert report["env"]["provider_requirements"]["missing"] == ["DEEPSEEK_API_KEY"]
+    assert report["clients"]["presets"] == ["openclaw"]
+    assert report["integrations"]["openclaw"]["recommended"] is True
+    assert report["integrations"]["n8n"]["recommended"] is False
+    assert report["provider_catalog"]["alert_count"] == 0
+    assert "Keep auto_update disabled until the provider and client set is stable." in report["suggestions"]
+
+
+def test_onboarding_report_marks_local_worker_ready(tmp_path: Path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("", encoding="utf-8")
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - local-worker
+providers:
+  local-worker:
+    contract: local-worker
+    backend: openai-compat
+    base_url: "http://127.0.0.1:11434/v1"
+    api_key: "local"
+    model: "llama3"
+    tier: local
+    capabilities:
+      local: true
+      cloud: false
+client_profiles:
+  enabled: false
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: false
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    report = build_onboarding_report(config_path=config_file, env_file=env_file)
+    text = render_onboarding_report(report)
+
+    assert report["providers"]["ready"] == 1
+    assert report["providers"]["local_workers"] == 1
+    assert report["provider_rollout"]["stage_1_primary"] == ["local-worker"]
+    assert "local-worker: local-worker / openai-compat / local / ready" in text
+    assert "- stage 1 primary: local-worker" in text
+    assert "Integration quickstarts" in text
+    assert "header: X-faigate-Client: codex" in text
+
+    markdown = render_onboarding_report_markdown(report)
+    assert "# fusionAIze Gate Onboarding Report" in markdown
+    assert "## Provider Rollout" in markdown
+    assert "`local-worker`" in markdown
+
+
+def test_onboarding_validation_blocks_missing_env_and_unready_providers(tmp_path: Path, monkeypatch):
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain: []
+providers:
+  deepseek-chat:
+    backend: openai-compat
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    tier: default
+  gemini-flash:
+    backend: google-genai
+    base_url: "https://generativelanguage.googleapis.com/v1beta"
+    api_key: "${GEMINI_API_KEY}"
+    model: "gemini-2.5-flash"
+    tier: mid
+client_profiles:
+  enabled: false
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: true
+  hooks: []
+update_check:
+  enabled: false
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    report = build_onboarding_report(config_path=config_file, env_file=tmp_path / ".env")
+    validation = build_onboarding_validation(report)
+    text = render_onboarding_validation(validation)
+
+    assert validation["ok"] is False
+    assert "Environment file is missing." in validation["blockers"]
+    assert "No configured provider is ready." in validation["blockers"]
+    assert "Fallback chain is empty for a multi-provider setup." in validation["blockers"]
+    assert "No ready primary provider is available for a staged multi-provider rollout." in validation["blockers"]
+    assert "Client profiles are disabled." in validation["warnings"]
+    assert "Request hooks are enabled but no hooks are configured." in validation["warnings"]
+    assert "Status: blocked" in text
+
+
+def test_onboarding_report_includes_provider_catalog_alerts(tmp_path: Path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DEEPSEEK_API_KEY=sk-demo\n", encoding="utf-8")
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - deepseek-chat
+providers:
+  deepseek-chat:
+    backend: openai-compat
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat-v2"
+client_profiles:
+  enabled: true
+  default: generic
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: false
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    report = build_onboarding_report(config_path=config_file, env_file=env_file)
+    validation = build_onboarding_validation(report)
+    text = render_onboarding_report(report)
+
+    assert report["provider_catalog"]["alert_count"] == 1
+    assert report["provider_catalog"]["alerts"][0]["code"] == "model-drift"
+    assert "Provider catalog" in text
+    assert any("curated catalog recommends" in warning for warning in validation["warnings"])
+
+
+def test_onboarding_report_includes_provider_discovery_links(tmp_path: Path, monkeypatch):
+    env_file = tmp_path / ".env"
+    env_file.write_text("OPENROUTER_API_KEY=or-demo\n", encoding="utf-8")
+    monkeypatch.setenv(
+        "FAIGATE_PROVIDER_LINK_OPENROUTER_FALLBACK_URL",
+        "https://go.example.test/openrouter",
+    )
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - openrouter-fallback
+providers:
+  openrouter-fallback:
+    backend: openai-compat
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: "${OPENROUTER_API_KEY}"
+    model: "openrouter/auto"
+client_profiles:
+  enabled: true
+  default: generic
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: false
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    report = build_onboarding_report(config_path=config_file, env_file=env_file)
+    text = render_onboarding_report(report)
+    markdown = render_onboarding_report_markdown(report)
+
+    policy = report["provider_catalog"]["recommendation_policy"]
+
+    assert policy["provider_links_affect_ranking"] is False
+    assert "provider discovery:" in text
+    assert "openrouter-fallback: disclosed link -> https://go.example.test/openrouter" in text
+    assert "Policy: provider links affect ranking = `False`" in markdown
+    assert "`openrouter-fallback`: disclosed link -> `https://go.example.test/openrouter`" in markdown
+
+
+def test_onboarding_validation_passes_for_ready_multi_provider_setup(tmp_path: Path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DEEPSEEK_API_KEY=sk-demo\n", encoding="utf-8")
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - deepseek-chat
+providers:
+  deepseek-chat:
+    backend: openai-compat
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    tier: default
+client_profiles:
+  enabled: true
+  default: generic
+  presets: ["openclaw", "cli"]
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: true
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    report = build_onboarding_report(config_path=config_file, env_file=env_file)
+    validation = build_onboarding_validation(report)
+
+    assert validation["ok"] is True
+    assert validation["blockers"] == []
+
+
+def test_onboarding_report_helper_supports_explicit_python_and_config_env(tmp_path: Path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DEEPSEEK_API_KEY=sk-demo\n", encoding="utf-8")
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - deepseek-chat
+providers:
+  deepseek-chat:
+    backend: openai-compat
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    tier: default
+client_profiles:
+  enabled: true
+  default: generic
+  presets: ["openclaw"]
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: false
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    repo_root = Path(__file__).resolve().parent.parent
+    script = repo_root / "scripts" / "faigate-onboarding-report"
+    env = os.environ.copy()
+    env["FAIGATE_CONFIG_FILE"] = str(config_file)
+    env["FAIGATE_ENV_FILE"] = str(env_file)
+    env["FAIGATE_PYTHON"] = sys.executable
+    env["PYTHONPATH"] = str(repo_root)
+
+    completed = subprocess.run(
+        ["bash", str(script), "--json"],
+        cwd=repo_root,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    report = json.loads(completed.stdout)
+    assert report["providers"]["ready"] == 1
+    assert report["clients"]["presets"] == ["openclaw"]
+
+
+def test_provider_discovery_helper_supports_json_output(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv(
+        "FAIGATE_PROVIDER_LINK_OPENROUTER_FALLBACK_URL",
+        "https://go.example.test/openrouter",
+    )
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - openrouter-fallback
+providers:
+  openrouter-fallback:
+    backend: openai-compat
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: "secret"
+    model: "openrouter/auto"
+client_profiles:
+  enabled: false
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: false
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    repo_root = Path(__file__).resolve().parent.parent
+    script = repo_root / "scripts" / "faigate-provider-discovery"
+    env = os.environ.copy()
+    env["FAIGATE_CONFIG_FILE"] = str(config_file)
+    env["FAIGATE_PYTHON"] = sys.executable
+    env["PYTHONPATH"] = str(repo_root)
+
+    completed = subprocess.run(
+        ["bash", str(script), "--json"],
+        cwd=repo_root,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    view = json.loads(completed.stdout)
+    assert view["recommendation_policy"]["provider_links_affect_ranking"] is False
+    assert view["providers"][0]["provider"] == "openrouter-fallback"
+    assert view["providers"][0]["resolved_url"] == "https://go.example.test/openrouter"
+
+
+def test_provider_discovery_helper_supports_filters(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv(
+        "FAIGATE_PROVIDER_LINK_OPENROUTER_FALLBACK_URL",
+        "https://go.example.test/openrouter",
+    )
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - deepseek-chat
+providers:
+  deepseek-chat:
+    backend: openai-compat
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "secret"
+    model: "deepseek-chat"
+  openrouter-fallback:
+    backend: openai-compat
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: "secret"
+    model: "openrouter/auto"
+client_profiles:
+  enabled: false
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: false
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    repo_root = Path(__file__).resolve().parent.parent
+    script = repo_root / "scripts" / "faigate-provider-discovery"
+    env = os.environ.copy()
+    env["FAIGATE_CONFIG_FILE"] = str(config_file)
+    env["FAIGATE_PYTHON"] = sys.executable
+    env["PYTHONPATH"] = str(repo_root)
+
+    completed = subprocess.run(
+        ["bash", str(script), "--json", "--link-source", "operator_override", "--disclosed-only"],
+        cwd=repo_root,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    view = json.loads(completed.stdout)
+    assert view["filters"]["link_source"] == "operator_override"
+    assert view["filters"]["disclosed_only"] is True
+    assert [item["provider"] for item in view["providers"]] == ["openrouter-fallback"]
+
+
+def test_onboarding_report_marks_all_builtin_integrations_ready(tmp_path: Path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DEEPSEEK_API_KEY=sk-demo\n", encoding="utf-8")
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - deepseek-chat
+providers:
+  deepseek-chat:
+    backend: openai-compat
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    tier: default
+client_profiles:
+  enabled: true
+  default: generic
+  presets: ["openclaw", "n8n", "cli"]
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: true
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    report = build_onboarding_report(config_path=config_file, env_file=env_file)
+
+    assert report["integrations"]["openclaw"]["recommended"] is True
+    assert report["integrations"]["n8n"]["recommended"] is True
+    assert report["integrations"]["cli"]["recommended"] is True
+    assert "autogen" in report["integrations"]
+    assert "llamaindex" in report["integrations"]
+    assert "crewai" in report["integrations"]
+    assert "pydanticai" in report["integrations"]
+    assert "camel" in report["integrations"]
+    assert report["clients"]["matrix"][0]["name"] == "cli"
+    assert report["clients"]["matrix"][0]["has_rule"] is True
+
+
+def test_collect_provider_env_requirements_tracks_present_and_missing(tmp_path: Path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DEEPSEEK_API_KEY=sk-demo\n", encoding="utf-8")
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+providers:
+  deepseek-chat:
+    backend: openai-compat
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+  image-worker:
+    contract: image-provider
+    backend: openai-compat
+    base_url: "${IMAGE_PROVIDER_BASE_URL}"
+    api_key: "${IMAGE_PROVIDER_API_KEY}"
+    model: "image-model"
+""".strip(),
+        encoding="utf-8",
+    )
+
+    requirements = collect_provider_env_requirements(config_path=config_file, env_file=env_file)
+
+    assert requirements["required"] == [
+        "DEEPSEEK_API_KEY",
+        "IMAGE_PROVIDER_API_KEY",
+        "IMAGE_PROVIDER_BASE_URL",
+    ]
+    assert requirements["present"] == ["DEEPSEEK_API_KEY"]
+    assert requirements["missing"] == ["IMAGE_PROVIDER_API_KEY", "IMAGE_PROVIDER_BASE_URL"]
+
+
+def test_onboarding_report_includes_client_matrix_and_unmatched_profile_warning(
+    tmp_path: Path,
+):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DEEPSEEK_API_KEY=sk-demo\n", encoding="utf-8")
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - deepseek-chat
+providers:
+  deepseek-chat:
+    backend: openai-compat
+    base_url: "https://api.deepseek.com/v1"
+    api_key: "${DEEPSEEK_API_KEY}"
+    model: "deepseek-chat"
+    tier: default
+client_profiles:
+  enabled: true
+  default: generic
+  presets: ["n8n"]
+  profiles:
+    generic: {}
+    local-only:
+      capability_values:
+        local: true
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: false
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    report = build_onboarding_report(config_path=config_file, env_file=env_file)
+    validation = build_onboarding_validation(report)
+    text = render_onboarding_report(report)
+
+    local_only = next(row for row in report["clients"]["matrix"] if row["name"] == "local-only")
+
+    assert local_only["matched_by"] == "default or explicit override"
+    assert "capability values: local=True" in local_only["routing_intent"]
+    assert (
+        "Client profile 'local-only' has no match rule and only applies via explicit override."
+        in validation["warnings"]
+    )
+    assert "Client matrix" in text
+    assert "match: default or explicit override" in text
+
+
+def test_onboarding_report_includes_provider_rollout_stages_and_gaps(tmp_path: Path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("PRIMARY_KEY=sk-primary\n", encoding="utf-8")
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+fallback_chain:
+  - image-worker
+providers:
+  primary-chat:
+    backend: openai-compat
+    base_url: "https://api.example.com/v1"
+    api_key: "${PRIMARY_KEY}"
+    model: "primary-chat"
+    tier: default
+  image-worker:
+    contract: image-provider
+    backend: openai-compat
+    base_url: "http://127.0.0.1:9000/v1"
+    api_key: "${IMAGE_KEY}"
+    model: "image-model"
+    tier: specialty
+    capabilities:
+      image_generation: true
+client_profiles:
+  enabled: true
+  default: generic
+  presets: ["openclaw", "n8n"]
+  profiles:
+    generic: {}
+  rules: []
+routing_policies:
+  enabled: false
+  rules: []
+request_hooks:
+  enabled: false
+  hooks: []
+update_check:
+  enabled: false
+auto_update:
+  enabled: false
+""".strip(),
+        encoding="utf-8",
+    )
+
+    report = build_onboarding_report(config_path=config_file, env_file=env_file)
+    validation = build_onboarding_validation(report)
+    text = render_onboarding_report(report)
+
+    assert report["provider_rollout"]["stage_1_primary"] == ["primary-chat"]
+    assert report["provider_rollout"]["stage_2_secondary"] == []
+    assert report["provider_rollout"]["stage_3_modality"] == []
+    assert report["provider_rollout"]["fallback_targets"] == [
+        {"name": "image-worker", "configured": True, "ready": False}
+    ]
+    assert "Image-capable providers are configured, but none are ready yet." in report["provider_rollout"]["gaps"]
+    assert "Fallback chain is configured, but none of its targets are currently ready." in validation["warnings"]
+    assert "- stage 1 primary: primary-chat" in text
+    assert "- fallback targets:" in text

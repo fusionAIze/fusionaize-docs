@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+.pycache/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+build/
+dist/
+
+# venv
+venv/
+.venv/
+.venv-check/
+.venv-check-313/
+
+# local test/lint caches
+.pytest_cache/
+.ruff_cache/
+
+# local runtime / artifacts
+*.db
+*.db-*
+*.sqlite*
+*.sqlite3
+*.log
+
+# uvicorn / temp
+*.pid
+
+# secrets
+.env
+.env.*
+*.key
+*.pem
+
+# never commit ssh
+.ssh/
+
+# local agent workdirs / tool state
+.claude/
+.codex/
+.understand-anything/

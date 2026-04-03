@@ -1,0 +1,25 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    FUSIONAIZE_DOCS_DB_PATH=/var/lib/fusionaize-docs/fusionaize-docs.db
+
+WORKDIR /app
+
+RUN addgroup --system fusionaizedocs \
+    && adduser --system --ingroup fusionaizedocs --home /app fusionaizedocs \
+    && mkdir -p /var/lib/faiops-browser \
+    && chown -R fusionaizedocs:fusionaizedocs /app /var/lib/faiops-browser
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+RUN pip install --no-cache-dir .
+
+USER faigate
+
+EXPOSE 8127
+
+CMD ["python", "-m", "fusionaize_docs"]
