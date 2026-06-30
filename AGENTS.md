@@ -154,3 +154,11 @@ Do not document features that do not exist.
 - prefer minor bumps for meaningful features or operational behavior changes
 - prefer patch bumps for fixes, polish, and small compatibility updates
 - reserve major bumps for explicit breaking changes and documented migrations
+
+## Where to work — Forgejo-first
+
+- **Canonical origin:** `git.langevc.com/fusionaize/fusionaize-docs` (Forgejo). **Do not push to GitHub** — it is a read-only mirror.
+- **Local clone:** `~/Documents/repositories/forgejo/fusionaize/fusionaize-docs`.
+- **Remotes:** `origin` = Forgejo (canonical), `github` = GitHub mirror (read-only).
+- **Pull requests:** open on Forgejo (`git.langevc.com/fusionaize/fusionaize-docs/pulls`).
+- **CI:** GitHub Actions workflows are guarded with `if: ${{ github.server_url == 'https://github.com' }}` so Forgejo skips them and the GitHub mirror runs them. `.forgejo/workflows/mirror.yml` (Forgejo-only) force-pushes every branch + tag back to GitHub.

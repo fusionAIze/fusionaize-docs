@@ -234,3 +234,8 @@ Apache‑2.0. See [LICENSE](./LICENSE).
 - **fusionAIze Grid** – runs the sovereign execution environment.
 - **fusionAIze Docs** – observes, monitors, and alerts across the stack.
 - **fusionAIzeOS** – orchestrates roles, policies, identities, and collaboration.
+## Repository & Contributing
+
+Canonical repository: **self-hosted Forgejo** — `git.langevc.com/fusionaize/fusionaize-docs`
+(`git clone git@git.langevc.com:fusionaize/fusionaize-docs.git`). Develop against the Forgejo
+clone and open pull requests there. The GitHub copy is a read-only mirror.

@@ -8,6 +8,7 @@ on:
 
 jobs:
   test:
+    if: ${{ github.server_url == 'https://github.com' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -38,6 +39,7 @@ jobs:
           fail_ci_if_error: false
 
   package:
+    if: ${{ github.server_url == 'https://github.com' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +53,7 @@ jobs:
           python -m twine check dist/*
 
   lint:
+    if: ${{ github.server_url == 'https://github.com' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
