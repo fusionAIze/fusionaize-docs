@@ -41,3 +41,7 @@ venv/
 .claude/
 .codex/
 .understand-anything/
+
+# SkillWeave runtime is local; only the helper is tracked.
+.skillweave/*
+!.skillweave/agents.md
