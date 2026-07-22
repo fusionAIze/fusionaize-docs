@@ -42,6 +42,9 @@ venv/
 .codex/
 .understand-anything/
 
+# MkDocs build output (produced by the deploy workflow, never committed).
+site/
+
 # SkillWeave runtime is local; only the helper is tracked.
 .skillweave/*
 !.skillweave/agents.md

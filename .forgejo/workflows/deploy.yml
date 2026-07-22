@@ -1,0 +1,45 @@
+name: Deploy Docs (Forgejo-first)
+
+# Forgejo-first docs deploy. Builds the MkDocs site on the self-hosted runner
+# (same host as Caddy) and publishes it atomically to the Caddy-served
+# /srv/docs/fusionaize/site via a scoped bind-mount (runner valid_volumes: /srv/docs).
+# fusionaize-docs previously had NO deploy automation at all; this establishes it.
+# GitHub itself never runs this file (it only reads .github/); the server_url guard
+# is belt-and-suspenders so a stray Forgejo→GitHub mirror can never execute it
+# against github.com.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "README.md"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: ${{ github.server_url != 'https://github.com' }}
+    runs-on: ubuntu-latest
+    container:
+      image: catthehacker/ubuntu:act-latest
+      volumes:
+        - /srv/docs/fusionaize:/publish
+    steps:
+      - uses: https://github.com/actions/checkout@v4
+      - uses: https://github.com/actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MkDocs
+        run: pip install --quiet mkdocs mkdocs-material
+      - name: Build site
+        run: mkdocs build --clean --site-dir ./_site
+      - name: Publish to /srv/docs (atomic swap)
+        run: |
+          set -euo pipefail
+          rm -rf /publish/site.new /publish/site.old
+          cp -a ./_site /publish/site.new
+          if [ -d /publish/site ]; then mv /publish/site /publish/site.old; fi
+          mv /publish/site.new /publish/site
+          rm -rf /publish/site.old
+          echo "Published $(find /publish/site -type f | wc -l) files to /srv/docs/fusionaize/site."

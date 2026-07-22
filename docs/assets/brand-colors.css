@@ -1,0 +1,168 @@
+/* === Brand Tokens === */
+:root {
+  --fusionaize-primary-dark: #1F497D;
+  --fusionaize-navy: #26437B;
+  --fusionaize-primary-blue: #0052CC;
+  --fusionaize-mid-blue: #3663BE;
+  --fusionaize-light-blue: #54ABEE;
+  --fusionaize-orange-pop: #FFAA19;
+  --fusionaize-lime-accent: #C4D900;
+  --fusionaize-fresh-green: #2EA75D;
+  --fusionaize-slate-500: #6B7A99;
+  --fusionaize-slate-200: #D4DEEC;
+  --fusionaize-light-neutral: #E1E9F3;
+  --fusionaize-error: #E5484D;
+
+  --md-primary-fg-color: var(--fusionaize-primary-blue);
+  --md-primary-fg-color--light: var(--fusionaize-light-blue);
+  --md-primary-fg-color--dark: var(--fusionaize-primary-dark);
+  --md-accent-fg-color: var(--fusionaize-orange-pop);
+  --md-accent-fg-color--transparent: rgba(255, 170, 25, 0.1);
+}
+
+/* === Slate (Dark) Mode === */
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #0d1421;
+  --md-default-bg-color--light: #121a2b;
+  --md-default-bg-color--lighter: #1a2540;
+  --md-default-bg-color--lightest: #243050;
+  --md-default-fg-color: #E1E9F3;
+  --md-default-fg-color--light: #C4D0E0;
+  --md-default-fg-color--lighter: #8EA0BE;
+  --md-default-fg-color--lightest: #6B7A99;
+  --md-typeset-a-color: var(--fusionaize-light-blue);
+  --md-typeset-mark-color: rgba(255, 170, 25, 0.3);
+  --md-code-bg-color: #0d1421;
+  --md-code-fg-color: #E1E9F3;
+  --md-code-hl-color: rgba(84, 171, 238, 0.15);
+  --md-admonition-bg-color: #121a2b;
+  --md-admonition-fg-color: #E1E9F3;
+  --md-footer-bg-color: #0a1020;
+  --md-footer-bg-color--dark: #060a14;
+}
+
+[data-md-color-scheme="slate"] .md-header,
+[data-md-color-scheme="slate"] .md-tabs {
+  background: linear-gradient(135deg, var(--fusionaize-primary-dark) 0%, var(--fusionaize-primary-blue) 55%, var(--fusionaize-mid-blue) 100%);
+}
+
+/* === Default (Light) Mode === */
+[data-md-color-scheme="default"] {
+  --md-default-bg-color: #FFFFFF;
+  --md-default-bg-color--light: #F5F8FC;
+  --md-default-bg-color--lighter: #E1E9F3;
+  --md-default-bg-color--lightest: #D4DEEC;
+  --md-default-fg-color: #1F497D;
+  --md-default-fg-color--light: #26437B;
+  --md-default-fg-color--lighter: #6B7A99;
+  --md-default-fg-color--lightest: #8EA0BE;
+  --md-typeset-a-color: var(--fusionaize-primary-blue);
+  --md-typeset-mark-color: rgba(255, 170, 25, 0.25);
+  --md-code-bg-color: #F0F4FA;
+  --md-code-fg-color: #1F497D;
+  --md-code-hl-color: rgba(0, 82, 204, 0.1);
+  --md-admonition-bg-color: #F5F8FC;
+  --md-admonition-fg-color: #1F497D;
+  --md-footer-bg-color: var(--fusionaize-primary-dark);
+  --md-footer-bg-color--dark: #162d54;
+}
+
+[data-md-color-scheme="default"] .md-header,
+[data-md-color-scheme="default"] .md-tabs {
+  background: linear-gradient(135deg, var(--fusionaize-primary-dark) 0%, var(--fusionaize-primary-blue) 55%, var(--fusionaize-mid-blue) 100%);
+}
+
+/* === Navigation === */
+[data-md-color-scheme="slate"] .md-nav__link { color: #C4D0E0; }
+[data-md-color-scheme="slate"] .md-nav__link:hover { color: var(--fusionaize-light-blue); }
+[data-md-color-scheme="slate"] .md-nav__link--active { color: var(--fusionaize-light-blue); }
+[data-md-color-scheme="slate"] .md-nav__title { color: #E1E9F3; }
+
+[data-md-color-scheme="default"] .md-nav__link { color: #26437B; }
+[data-md-color-scheme="default"] .md-nav__link:hover { color: var(--fusionaize-primary-blue); }
+[data-md-color-scheme="default"] .md-nav__link--active { color: var(--fusionaize-primary-blue); }
+
+/* === Tables === */
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) { background-color: #121a2b; border-color: #243050; }
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th { background-color: var(--fusionaize-primary-dark); color: #E1E9F3; }
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) td { border-color: #243050; }
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) tr:hover td { background-color: #1a2540; }
+
+[data-md-color-scheme="default"] .md-typeset table:not([class]) { background-color: #FFFFFF; border-color: var(--fusionaize-slate-200); }
+[data-md-color-scheme="default"] .md-typeset table:not([class]) th { background-color: var(--fusionaize-light-neutral); color: var(--fusionaize-primary-dark); }
+[data-md-color-scheme="default"] .md-typeset table:not([class]) td { border-color: var(--fusionaize-slate-200); }
+[data-md-color-scheme="default"] .md-typeset table:not([class]) tr:hover td { background-color: #F5F8FC; }
+
+/* === Code Blocks === */
+[data-md-color-scheme="slate"] .md-typeset code { background-color: #1a2540; color: var(--fusionaize-light-blue); }
+[data-md-color-scheme="default"] .md-typeset code { background-color: var(--fusionaize-light-neutral); color: var(--fusionaize-primary-blue); }
+
+/* === Admonitions === */
+[data-md-color-scheme="slate"] .md-typeset .admonition,
+[data-md-color-scheme="slate"] .md-typeset details { border-color: #243050; }
+
+[data-md-color-scheme="default"] .md-typeset .admonition,
+[data-md-color-scheme="default"] .md-typeset details { border-color: var(--fusionaize-slate-200); }
+
+/* === Mermaid Theming === */
+[data-md-color-scheme="slate"] .mermaid .node rect,
+[data-md-color-scheme="slate"] .mermaid .node polygon,
+[data-md-color-scheme="slate"] .mermaid .node circle,
+[data-md-color-scheme="slate"] .mermaid .node path {
+  fill: var(--fusionaize-primary-dark) !important;
+  stroke: var(--fusionaize-light-blue) !important;
+  stroke-width: 1.2px !important;
+}
+[data-md-color-scheme="slate"] .mermaid .cluster rect { fill: rgba(0,82,204,0.08) !important; stroke: #243050 !important; }
+[data-md-color-scheme="slate"] .mermaid .nodeLabel,
+[data-md-color-scheme="slate"] .mermaid span.nodeLabel {
+  color: #E1E9F3 !important; fill: #E1E9F3 !important;
+}
+[data-md-color-scheme="slate"] .mermaid .edgeLabel,
+[data-md-color-scheme="slate"] .mermaid .edgeLabel p {
+  color: #C4D0E0 !important; background-color: #121a2b !important;
+}
+[data-md-color-scheme="slate"] .mermaid .edgePath .path,
+[data-md-color-scheme="slate"] .mermaid .flowchart-link,
+[data-md-color-scheme="slate"] .mermaid line { stroke: #6B7A99 !important; }
+[data-md-color-scheme="slate"] .mermaid .actor { fill: var(--fusionaize-primary-dark) !important; stroke: var(--fusionaize-light-blue) !important; }
+[data-md-color-scheme="slate"] .mermaid text.actor { fill: #E1E9F3 !important; }
+
+[data-md-color-scheme="default"] .mermaid .node rect,
+[data-md-color-scheme="default"] .mermaid .node polygon,
+[data-md-color-scheme="default"] .mermaid .node circle,
+[data-md-color-scheme="default"] .mermaid .node path {
+  fill: #E8F0FC !important;
+  stroke: var(--fusionaize-primary-blue) !important;
+}
+[data-md-color-scheme="default"] .mermaid .cluster rect { fill: #F5F8FC !important; stroke: var(--fusionaize-slate-200) !important; }
+[data-md-color-scheme="default"] .mermaid .nodeLabel,
+[data-md-color-scheme="default"] .mermaid span.nodeLabel {
+  color: var(--fusionaize-primary-dark) !important; fill: var(--fusionaize-primary-dark) !important;
+}
+[data-md-color-scheme="default"] .mermaid .edgeLabel,
+[data-md-color-scheme="default"] .mermaid .edgeLabel p {
+  color: var(--fusionaize-primary-dark) !important; background-color: #F5F8FC !important;
+}
+[data-md-color-scheme="default"] .mermaid .edgePath .path,
+[data-md-color-scheme="default"] .mermaid .flowchart-link,
+[data-md-color-scheme="default"] .mermaid line { stroke: var(--fusionaize-slate-500) !important; }
+[data-md-color-scheme="default"] .mermaid .actor { fill: #E8F0FC !important; stroke: var(--fusionaize-primary-blue) !important; }
+[data-md-color-scheme="default"] .mermaid text.actor { fill: var(--fusionaize-primary-dark) !important; }
+
+/* === Logo per mode === */
+[data-md-color-scheme="slate"] .md-logo img {
+  content: url(assets/fusionaize-logo-white.svg);
+}
+[data-md-color-scheme="default"] .md-logo img {
+  content: url(assets/fusionaize-logo.svg);
+}
+
+/* === Headings === */
+[data-md-color-scheme="slate"] .md-typeset h1 { color: #FFFFFF; font-weight: 700; }
+[data-md-color-scheme="slate"] .md-typeset h2 { color: #E1E9F3; font-weight: 600; }
+[data-md-color-scheme="slate"] .md-typeset h3 { color: #C4D0E0; font-weight: 600; }
+
+[data-md-color-scheme="default"] .md-typeset h1 { color: var(--fusionaize-primary-dark); font-weight: 700; }
+[data-md-color-scheme="default"] .md-typeset h2 { color: var(--fusionaize-navy); font-weight: 600; }
+[data-md-color-scheme="default"] .md-typeset h3 { color: var(--fusionaize-primary-blue); font-weight: 600; }

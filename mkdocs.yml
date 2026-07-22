@@ -1,0 +1,120 @@
+site_name: fusionAIze
+site_description: AI infrastructure for human-AI fusion teams — faigate, failens, faifabric, faigrid, faios, and more
+site_author: fusionaize.com
+site_url: https://docs.fusionaize.com
+repo_url: https://github.com/FusionAIze
+repo_name: FusionAIze
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  logo: assets/fusionaize-logo-white.svg
+  favicon: assets/favicon.svg
+  palette:
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+
+extra_css:
+  - assets/brand-colors.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+
+  - Why fusionAIze:
+      - Vision & Mission: about/vision.md
+      - Brand Story: about/brand.md
+      - Platform Overview: about/platform.md
+
+  - Products:
+      - Overview: products/index.md
+      - Gate — AI Gateway: products/gate/index.md
+      - Lens — Context Layer: products/lens/index.md
+      - Fabric — Memory Fabric: products/fabric/index.md
+      - Grid — Execution Substrate: products/grid/index.md
+      - OS — Team Logic: products/os/index.md
+      - Extended Stack:
+          - Studio — Blueprint Authoring: products/studio/index.md
+          - Signal — Operational Intelligence: products/signal/index.md
+          - SDK — Integration Layer: products/sdk/index.md
+
+  - Architecture:
+      - System Architecture: architecture/index.md
+      - Stack Integration: architecture/stack.md
+      - Deployment Profiles: architecture/deployment.md
+      - Security Model: architecture/security.md
+
+  - Getting Started:
+      - Quickstart: getting-started/index.md
+      - Installation: getting-started/install.md
+      - Configuration: getting-started/config.md
+
+  - For Your Role:
+      - Freelancers & Solopreneurs: audiences/freelancer.md
+      - Agencies: audiences/agency.md
+      - SMEs: audiences/sme.md
+      - Enterprise: audiences/enterprise.md
+      - Education: audiences/education.md
+      - R&D / Innovation Labs: audiences/research.md
+
+  - Compliance & Trust:
+      - DSGVO / GDPR: compliance/gdpr.md
+      - EU AI Act: compliance/eu-ai-act.md
+      - On-Premise & Sovereignty: compliance/sovereignty.md
+      - Security: compliance/security.md
+
+  - About:
+      - The Capacium Universe: about/capacium.md
+      - Open-Core Model: about/open-core.md
+      - Roadmap: about/roadmap.md
+
+  - Contributing: contributing/index.md
+
+  - Legal:
+      - License: legal/license.md
+      - Privacy: legal/privacy.md
+
+plugins:
+  - search
