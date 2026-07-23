@@ -25,6 +25,8 @@ jobs:
       image: catthehacker/ubuntu:act-latest
       volumes:
         - /srv/docs/fusionaize:/publish
+        # Marker drop-point: docs-purge.path reacts to it instantly.
+        - /srv/docs/.purge-queue:/purge-queue
     steps:
       - uses: https://github.com/actions/checkout@v4
       - uses: https://github.com/actions/setup-python@v5
@@ -43,3 +45,10 @@ jobs:
           mv /publish/site.new /publish/site
           rm -rf /publish/site.old
           echo "Published $(find /publish/site -type f | wc -l) files to /srv/docs/fusionaize/site."
+      - name: Request Cloudflare cache purge
+        run: |
+          # Cloudflare overrides origin Cache-Control (4 h edge TTL), so without this
+          # the deploy stays invisible. Dropping a marker lets the host purge it via
+          # docs-purge.path — no Cloudflare token is needed inside CI.
+          touch /purge-queue/docs.fusionaize.com
+          echo "Queued cache purge for docs.fusionaize.com."
