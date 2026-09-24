@@ -8,9 +8,11 @@
 
 Every AI workflow needs somewhere to run. Grid provides that substrate — a distributed execution engine that schedules work across runners, manages secrets securely, exposes telemetry, and recovers from failures. Grid runs **anywhere**: your laptop, an on-premise server, a cloud VM, or a multi-node cluster.
 
+At the centre of Grid is the **[Supervisor](../../architecture/glossary.md#supervisor)** — the service that presents the **Scheduler**, the **Runner Pool** and the **Recovery Engine** through the **Control API**. Callers submit jobs to the Supervisor, query their status, and read a job's recovery history from it; the components behind the API are implementation. See the [glossary](../../architecture/glossary.md) for how the term relates to the rest of the stack.
+
 ```mermaid
 graph TB
-    subgraph "faigrid"
+    subgraph Supervisor["Supervisor"]
         Scheduler["Scheduler
         · Queue management
         · Priority dispatch
@@ -49,7 +51,7 @@ graph TB
     Runner --> Observe
     Runner --> Recovery
 
-    style Grid fill:#2563eb,color:#fff,stroke:#1d4ed8
+    style Supervisor fill:#2563eb,color:#fff,stroke:#1d4ed8
 ```
 
 ---
