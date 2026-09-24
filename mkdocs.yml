@@ -85,7 +85,7 @@ nav:
       - Stack Integration: architecture/stack.md
       - Deployment Profiles: architecture/deployment.md
       - Security Model: architecture/security.md
-
+      - Glossary: architecture/glossary.md
   - Getting Started:
       - Quickstart: getting-started/index.md
       - Installation: getting-started/install.md
