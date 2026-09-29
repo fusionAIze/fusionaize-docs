@@ -1,19 +1,17 @@
 ## What changed
 
-- 
+-
 
 ## Why
 
-- 
+-
 
 ## How verified
 
-- [ ] `python3 -m compileall faigate tests`
-- [ ] `pytest -q`
-- [ ] `ruff check .`
-- [ ] `ruff format --check .`
+- [ ] checks pass (see CONTRIBUTING.md)
+- [ ] `pre-commit run --all-files` (if .pre-commit-config.yaml exists)
 - [ ] relevant docs updated
 
 ## Risk / follow-up
 
-- 
+-
